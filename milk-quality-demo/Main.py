@@ -28,6 +28,7 @@ import membership as ms
 import shutil
 from sklearn.feature_selection import r_regression
 from sklearn.metrics import mean_squared_error
+import yaml
 
 # connected = False
 # while not connected:
@@ -46,9 +47,9 @@ def load_data(data):
     return pd.read_excel(data,index_col=0)
 
 #@st.cache_resource
-def display_result():
-    for i in range(n_ys):
-        with st.expander('View Results for '+y_names[i]):
+def display_result(train_labels:list = None):
+    for i in range(len(train_labels)):
+        with st.expander('View Results for '+train_labels[i]):
             #st.write(i)
             st.dataframe(list_result_table[i],use_container_width=True)
             st.plotly_chart(list_result_fig[i],use_container_width=True)
@@ -63,10 +64,10 @@ def display_result():
                     st.success('RMSE : '+str(list_result_rmse[i]))
 
 #@st.cache_resource
-def train_model(n_components):
+def train_model(n_components, train_labels: list =  None):
     global y_test,y_pred
     #print(2)
-    for y_name in y_names:
+    for y_name in train_labels:
         #st.text('Number of components :'+str(n_components))
         model = deepcopy(PLSRegression(n_components=n_components))
         #st.write(x_train)
@@ -117,8 +118,13 @@ def save_model(model_name, y_name):
     model_name_y_name = model_name+'_'+y_name
     scaler_name = model_name+'_scaler'
     scaler_name_y_name = scaler_name+'_'+y_name
-    model_filename = os.path.join(dirname, model_name+'/'+model_name_y_name+'.joblib')
-    scaler_filename = os.path.join(dirname, model_name+'/'+scaler_name_y_name+'.joblib')
+    save_dir = os.path.join(dirname, y_name, model_name)
+    print(save_dir)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    model_filename = os.path.join(save_dir, model_name_y_name+'.joblib')
+    print(model_filename)
+    scaler_filename = os.path.join(save_dir, scaler_name_y_name+'.joblib')
     model = model_dict.get(y_name)
     scaler = training_data_dict.get(y_name)[4]
     joblib.dump(model,model_filename)
@@ -128,19 +134,20 @@ def save_model(model_name, y_name):
     return None
 
 
-def save_all_model(model_name):
+def save_all_model(model_name, train_labels: list = None):
     #global model_name
     #update_model_name()
     global y_names
     try:
         st.session_state['save'] = True
-        folder_dir = os.path.join(dirname,model_name)
-        #st.write(folder_dir)
-        os.mkdir(folder_dir)
-        #st.write(model_name)
+        for label in train_labels:
+            folder_dir = os.path.join(dirname,label)
+            #st.write(folder_dir)
+            os.mkdir(folder_dir)
+            #st.write(model_name)
     except:
         pass
-    for y_name in y_names:
+    for y_name in train_labels:
         save_model(model_name,y_name)
 
 def clear_cache_resource():
@@ -148,23 +155,27 @@ def clear_cache_resource():
     train_now = False
     #st.cache_resource.clear()
 
-def delete_model(mode,name):
-    global all_models
-    if mode == 'Single':
-        shutil.rmtree('Models/'+name)
-    else:
-        for md in all_models:
-            shutil.rmtree('Models/'+md)
+def delete_model(label: str, name: str):
+    with open('current_model.yaml', 'r') as file:
+        data = yaml.safe_load(file)
+        if name != data[label.lower()]:
+            shutil.rmtree(os.path.join('Models',label,name))
+        else:
+            st.warning('This model is currently on production!')
 
 def logout():
     st.session_state['login'] = False
     st.session_state['logout'] = True
     print(st.session_state['login'])
 
-
 dirname = os.path.dirname(__file__)
 dirname = os.path.join(dirname,'Models')
-all_models = [name for name in os.listdir(dirname) if name != '.DS_Store']
+#all_models = [name for name in os.listdir(dirname) if name != '.DS_Store']
+
+def get_models_by_labels(label: str):
+    global dirname
+    return list(os.listdir(os.path.join(dirname, label)))
+    
 
 def refresh_models_list():
     return [name for name in os.listdir(dirname) if name != '.DS_Store']
@@ -186,9 +197,9 @@ if 'uploaded' not in st.session_state:
     st.session_state['process'] = False
     st.session_state['train'] = False
     st.session_state['reload'] = True 
-    st.session_state['login'] = False
+    st.session_state['login'] = True
     st.session_state['register'] = False
-    st.session_state['user'] = False
+    st.session_state['user'] = True
     st.session_state['save'] = False
     st.session_state['logout'] = False
     st.session_state['save_button'] = False
@@ -229,30 +240,33 @@ elif st.session_state['login'] == True and not st.session_state['user']:
     with st.sidebar:
         st.header('Model Management')
         #tf = open("current_model.txt", "r")
-        #st.text('Current Model : '+tf.read())
-        to_deploy_model = st.selectbox('Select Model To Deploy',all_models)
+        st.subheader('Deploy')
+        scc_deploy_model = st.selectbox('SCC',get_models_by_labels('SCC'), key='deploy_scc')
+        fat_deploy_model = st.selectbox('Fat',get_models_by_labels('Fat'), key='deploy_fat')
+        prt_deploy_model = st.selectbox('Prt',get_models_by_labels('Prt'), key='deploy_prt')
         if st.button('Deploy'):
-            with open('current_model.txt','r+') as f:
-                f.seek(0)
-                f.write(to_deploy_model)
-                f.truncate() 
-                tf = to_deploy_model
-                f.close()
+            with open('current_model.yaml', 'r') as file:
+                data = yaml.safe_load(file)
+            data['scc'] = scc_deploy_model
+            data['fat'] = fat_deploy_model
+            data['prt'] = prt_deploy_model
+            with open('current_model.yaml', 'w') as file:
+                yaml.safe_dump(data, file)
                 st.success('Deployed Successfully')
-        to_delete_model = st.selectbox('Select Model To Delete',all_models)
-        with st.container():
-            col1,col2 = st.columns([0.075,0.2])
-            with col1:
-                if all_models == []:
-                    st.button('Delete',disabled=True)
-                else:
-                    st.button('Delete',on_click=delete_model,kwargs={'mode':'Single','name':to_delete_model},key='del1')
-            with col2:
-                if all_models == []:
-                    st.button('Delete all',disabled=True)
-                else:
-                    st.button('Delete',on_click=delete_model,kwargs={'mode':'All','name':to_delete_model},key='delall')
-                    
+        st.subheader('Delete')       
+        scc_delete_model = st.selectbox('SCC',get_models_by_labels('SCC'), key='del_scc')
+        if st.button('Delete', disabled=len(get_models_by_labels('SCC')) == 0, key='scc_del_button', on_click=delete_model, kwargs={'label':'SCC','name':scc_delete_model}):
+            #delete_model('SCC',scc_delete_model)
+            pass
+        fat_delete_model = st.selectbox('Fat',get_models_by_labels('Fat'), key='del_fat')
+        if st.button('Delete', disabled=len(get_models_by_labels('Fat')) == 0, key='fat_del_button', on_click=delete_model, kwargs={'label':'Fat','name':fat_delete_model}):
+            #delete_model('Fat',fat_delete_model)
+            pass
+        prt_delete_model = st.selectbox('Prt',get_models_by_labels('Prt'), key='del_prt')
+        if st.button('Delete', disabled=len(get_models_by_labels('Prt')) == 0, key='prt_del_button', on_click=delete_model, kwargs={'label':'Prt','name':prt_delete_model}):
+            #delete_model('Prt',prt_delete_model)
+            pass
+
     with st.container():
         col1,col2 = st.columns([0.9,0.1])
     with col1:
@@ -299,7 +313,8 @@ elif st.session_state['login'] == True and not st.session_state['user']:
         with col1:
             process_and_train_button = st.button('Process')
         with col2:
-            skip_check_box = st.checkbox('Skip Preprocess',on_change=clear_cache_resource)
+            skip_check_box: bool = st.checkbox('Skip Preprocess',on_change=clear_cache_resource)
+            plot_preprocess_result: bool = st.checkbox('Plot Result')
         if process_and_train_button:
             try:
                 st.session_state['process'] = True
@@ -364,7 +379,7 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                         st.success('Success')
                     else:
                         st.success('Skipped')
-                st.write(st.session_state['reload'])
+                #st.write(st.session_state['reload'])
                 if st.session_state['reload'] == True:
                     if not skip_check_box:
                         msc_data = sv1_data
@@ -406,7 +421,7 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 with col2:
                     st.info(wait_for_process_text)
 
-        if st.session_state['process'] == True and not skip_check_box:
+        if st.session_state['process'] == True and not skip_check_box and plot_preprocess_result:
             with st.container():
                 pd1,pd2,pd3 = st.columns(3,gap='medium')
                 with pd1:
@@ -438,8 +453,28 @@ elif st.session_state['login'] == True and not st.session_state['user']:
 
     # Training
     st.subheader('Training')
-    if st.button('Train'):
-        train_now = True
+    train_labels = []
+    with st.form(key='model_train'):
+        with st.container():
+            p1,p2,p3= st.columns(3, gap='small')
+        with p1:
+            with st.container():
+               c1,c2,c3 = st.columns(3, gap='small')
+            with c1:
+                train_scc = st.checkbox(label='SCC')
+            with c2:
+                train_fat = st.checkbox(label='Fat')
+            with c3:
+                train_prt = st.checkbox(label='Prt')
+            train_button = st.form_submit_button(label='Train',type='primary')
+        if train_button:
+            train_now = True
+            if not (train_scc or train_fat or train_prt):
+                st.warning('Please select as least one target to train!')
+                train_now = False
+    if train_scc: train_labels.append('SCC')
+    if train_fat: train_labels.append('Fat')
+    if train_prt: train_labels.append('Prt')
         #st.cache_resource.clear()
     list_result_table = []
     list_result_fig = []
@@ -450,13 +485,13 @@ elif st.session_state['login'] == True and not st.session_state['user']:
 
     # Training 
     if st.session_state['process'] == True:
-        if train_now:
+        if train_now and 'train_labels' in globals():
             st.session_state['train'] = True
             #st.session_state['reload'] = False
             model_dict = {}
             n_components = 20
             #print(1)
-            train_model(n_components)
+            train_model(n_components, train_labels=train_labels)
                 #st.success('Score :'+str(score))
                 # for y_name in y_names:
                 #     save_model(model_name,y_name)
@@ -466,7 +501,7 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 #st.experimental_rerun()
             
             #displaying
-            display_result()
+            display_result(train_labels=train_labels)
             st.success('Trained Successfully')
             with st.form(key='model_save'):
                 model_name = st.text_input('Enter the model name')
@@ -474,7 +509,7 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 if save_button:
                     if model_name:
                         #st.write(model_name)
-                        save_all_model(model_name)
+                        save_all_model(model_name, train_labels=train_labels)
                         st.success('Saved Successfully')
             # model_name = st.text_input('Enter the model name',on_change=update_model_name)
             # if model_name == '':

@@ -3,6 +3,7 @@ import Functions
 import joblib
 import pandas as pd
 import os
+import yaml
 
 dirname = os.path.dirname(__file__)
 dirname = os.path.join(dirname,'Models')
@@ -55,12 +56,13 @@ def user_page():
 
         #st.write(numpy_data)
         if st.button('Predict'):
+            file = open('current_model.yaml', 'r')
+            model_dict = yaml.safe_load(file)
             for y_name in y_names:
                 with st.expander('View '+y_name+' Prediction Results'):
-                    current_model_name = open('current_model.txt','r').read()
-                    current_model_path = os.path.join(dirname,current_model_name+'/'+current_model_name+'_'+y_name+'.joblib')
+                    current_model_path = os.path.join(dirname,y_name,model_dict[y_name.lower()],model_dict[y_name.lower()]+'_'+y_name+'.joblib')
                     #st.write(current_model_path)
-                    current_scaler_path = os.path.join(dirname,current_model_name+'/'+current_model_name+'_'+'scaler'+'_'+y_name+'.joblib')
+                    current_scaler_path = os.path.join(dirname,y_name,model_dict[y_name.lower()],model_dict[y_name.lower()]+'_'+'scaler'+'_'+y_name+'.joblib')
                     model = joblib.load(current_model_path)
                     scaler = joblib.load(current_scaler_path)
                     result_numpy = model.predict(numpy_data)
