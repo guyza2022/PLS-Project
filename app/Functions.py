@@ -5,7 +5,7 @@ from scipy.signal import savgol_filter
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler 
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import accuracy_score
