@@ -5,7 +5,7 @@ FROM mysql:8.0
 ENV MYSQL_ROOT_PASSWORD=root
 ENV MYSQL_DATABASE=milk_quality_prediction
 
-# Copy the SQL script to the Docker image
+# Copy the SQL script to the Docker image 
 COPY milk_quality_prediction.sql /docker-entrypoint-initdb.d/
 
 # Expose the default MySQL port
