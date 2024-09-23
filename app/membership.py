@@ -24,7 +24,7 @@ except Exception as e:
 
 def connection():
     global conn,c
-    conn = pymysql.connect(host="localhost",user=user,passwd=pw,database=db_name,port=db_port)        
+    conn = pymysql.connect(host="52.64.234.175",user=user,passwd=pw,database=db_name,port=db_port)        
     c = conn.cursor()
     
 def register(name,surname,username,password):
