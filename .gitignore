@@ -1,0 +1,45 @@
+# Ignore operating system files
+.DS_Store
+Thumbs.db
+
+# Ignore Python compiled files
+__pycache__/
+*.py[cod]
+
+# Ignore virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Ignore logs
+*.log
+
+# Ignore node.js dependencies
+node_modules/
+
+# Ignore build directories
+build/
+dist/
+
+# Ignore IDE/editor-specific files
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignore macOS specific file
+.DS_Store
+
+# Ignore compiled files
+*.class
+*.o
+*.out
+*.so
+*.dll
+*.exe
+*.jar
+
+docker-compose.yml
