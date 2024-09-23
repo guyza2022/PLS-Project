@@ -3,13 +3,28 @@ import pymysql
 import bcrypt
 import dotenv
 import os
+import Functions
+import json
 
 dotenv.load_dotenv()
-# Connect
+secret_name = "prod/milk-quality-prediction/mysql"
+region_name = "ap-southeast-2"
+try: 
+    sql_keys = json.loads(Functions.get_secret(secret_name=secret_name, region_name=region_name))
+    user = sql_keys["SQL_USER"]
+    pw = sql_keys["SQL_PASSWORD"]
+    db_name = sql_keys["DB_NAME"]
+    db_port = int(sql_keys["DB_PORT"])
+except Exception as e: 
+    print(e)
+    user = os.environ["SQL_USER"]
+    pw = os.environ["SQL_PASSWORD"]
+    db_name = os.environ["DB_NAME"]
+    db_port = int(os.environ["DB_PORT"])
 
 def connection():
     global conn,c
-    conn = pymysql.connect(host=os.environ["SQL_HOST"],user=os.environ["SQL_USER"],passwd=os.environ["SQL_PASSWORD"],database=os.environ["DB_NAME"],port=os.environ["DB_PORT"])        
+    conn = pymysql.connect(host="localhost",user=user,passwd=pw,database=db_name,port=db_port)        
     c = conn.cursor()
     
 def register(name,surname,username,password):

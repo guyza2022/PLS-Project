@@ -94,10 +94,11 @@ traitlets==5.14.0
 typing_extensions==4.8.0
 tzdata==2023.3
 tzlocal==5.2
-urllib3==2.1.0
+urllib3==1.25.4
 validators==0.22.0
 wcwidth==0.2.12
 wheel==0.41.2
 zipp==3.17.0
 cryptography
-dotenv
+python-dotenv
+boto3==1.35.24
