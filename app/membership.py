@@ -1,12 +1,15 @@
 import streamlit as st
 import pymysql
 import bcrypt
+import dotenv
+import os
 
+dotenv.load_dotenv()
 # Connect
 
 def connection():
     global conn,c
-    conn = pymysql.connect(host="localhost",user="root",passwd="root",database="milk_quality_prediction",port=5555)        
+    conn = pymysql.connect(host=os.environ["SQL_HOST"],user=os.environ["SQL_USER"],passwd=os.environ["SQL_PASSWORD"],database=os.environ["DB_NAME"],port=os.environ["DB_PORT"])        
     c = conn.cursor()
     
 def register(name,surname,username,password):
