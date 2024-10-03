@@ -1,6 +1,6 @@
 # Use the official MySQL image from the Docker Hub
 FROM mysql:8.0
-
+ 
 # Set environment variables for the MySQL root user password and database name
 ENV MYSQL_ROOT_PASSWORD=root
 ENV MYSQL_DATABASE=milk_quality_prediction
