@@ -29,6 +29,8 @@ import shutil
 from sklearn.feature_selection import r_regression
 from sklearn.metrics import mean_squared_error
 import yaml
+import zipfile
+import io
 
 # connected = False
 # while not connected:
@@ -47,35 +49,43 @@ def load_data(data):
     return pd.read_excel(data,index_col=0)
 
 #@st.cache_resource
-def display_result(train_labels:list = None):
+def display_result(train_labels: list = None):
     for i in range(len(train_labels)):
         with st.expander('View Results for '+train_labels[i]):
             #st.write(i)
-            st.dataframe(list_result_table[i],use_container_width=True)
+            st.dataframe(list_result_table[i].astype(float),use_container_width=True)
             st.plotly_chart(list_result_fig[i],use_container_width=True)
             st.plotly_chart(list_result_weights[i],use_container_width=True)
             with st.container():
-                list_cols = st.columns(3)
+                list_cols = st.columns(7)
                 with list_cols[0]:
-                    st.success('Correlation : '+str(list_result_corr[i]))
+                    st.success('Correlation :\n ' + str(round(list_result_corr[i], 7)))
                 with list_cols[1]:
-                    st.success('R-square : '+str(list_result_score[i]))
+                    st.success('R-square :\n' + str(round(list_result_score[i], 7)))
                 with list_cols[2]:
-                    st.success('RMSE : '+str(list_result_rmse[i]))
+                    st.success('RMSE :\n' + str(round(list_result_rmse[i], 7)))
+                with list_cols[3]:
+                    st.success('Train Bias :\n' + str(round(list_train_bias[i], 7)))
+                with list_cols[4]:
+                    st.success('Test Bias :\n' + str(round(list_test_bias[i], 7)))
+                with list_cols[5]:
+                    st.success('Train SEP :\n' + str(round(list_train_sep[i], 7)))
+                with list_cols[6]:
+                    st.success('Test SEP :\n' + str(round(list_test_sep[i], 7)))
+
 
 #@st.cache_resource
 def train_model(n_components, train_labels: list =  None):
     global y_test,y_pred
     #print(2)
     for y_name in train_labels:
-        #st.text('Number of components :'+str(n_components))
         model = deepcopy(PLSRegression(n_components=n_components))
-        #st.write(x_train)
         model.fit(training_data_dict.get(y_name)[0],training_data_dict.get(y_name)[2])
         model_dict[y_name] = model
 
-        #with st.expander('View Results for '+y_name):
+        y_train_pred = model.predict(training_data_dict.get(y_name)[0])
         y_pred = model.predict(training_data_dict.get(y_name)[1])
+
         #compare values
         scaler = training_data_dict.get(y_name)[4]
         compare = pd.DataFrame(columns=['y_test','y_pred'])
@@ -87,8 +97,17 @@ def train_model(n_components, train_labels: list =  None):
         y_pred = scaler.inverse_transform(y_pred)
         compare['y_test'] = y_test.reshape(len(y_test),)
         compare['y_pred'] = y_pred.reshape(len(y_pred),)
-        #st.write(compare)
         list_result_table.append(compare)
+
+        train_bias = np.mean(y_train_pred - y_train)
+        test_bias = np.mean(y_pred - y_test)
+        list_train_bias.append(train_bias)
+        list_test_bias.append(test_bias)
+
+        train_sep = np.sqrt(np.mean((y_train_pred - y_train - train_bias) ** 2))
+        test_sep = np.sqrt(np.mean((y_pred - y_test - test_bias) ** 2))
+        list_train_sep.append(train_sep)
+        list_test_sep.append(test_sep)
 
         compare_fig = go.Figure()
         for col in compare.columns:
@@ -149,6 +168,22 @@ def save_all_model(model_name, train_labels: list = None):
         pass
     for y_name in train_labels:
         save_model(model_name,y_name)
+
+def create_zip(csv_dict: dict):
+    """
+    Create an in-memory ZIP file containing multiple CSVs from the provided URLs.
+    """
+    zip_buffer = io.BytesIO()  # Buffer to hold the in-memory ZIP
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, df in csv_dict.items():
+            try:
+                csv_data = df.to_csv(index=False)
+                # Write each CSV to the ZIP file
+                zf.writestr(f"{name}.csv", csv_data)
+            except Exception as e:
+                st.warning(f"Failed to download from {name}: {e}")
+    zip_buffer.seek(0)  # Move to the beginning of the buffer
+    return zip_buffer
 
 def clear_cache_resource():
     global train_now
@@ -459,14 +494,16 @@ elif st.session_state['login'] == True and not st.session_state['user']:
             p1,p2,p3= st.columns(3, gap='small')
         with p1:
             with st.container():
-               c1,c2,c3 = st.columns(3, gap='small')
+               c1,c2,c3,c4 = st.columns(4, gap='small')
             with c1:
                 train_scc = st.checkbox(label='SCC')
-            with c2:
+            #with c2:
                 train_fat = st.checkbox(label='Fat')
-            with c3:
+            #with c3:
                 train_prt = st.checkbox(label='Prt')
-            train_button = st.form_submit_button(label='Train',type='primary')
+            with c2:
+                n_components = st.slider(label='Number of Components', min_value=1, max_value=200, step=1, value=72)
+        train_button = st.form_submit_button(label='Train',type='primary')
         if train_button:
             train_now = True
             if not (train_scc or train_fat or train_prt):
@@ -482,14 +519,17 @@ elif st.session_state['login'] == True and not st.session_state['user']:
     list_result_weights = []
     list_result_corr = []
     list_result_rmse = []
-
+    list_train_bias = []
+    list_test_bias = []
+    list_train_sep = []
+    list_test_sep = []
     # Training 
     if st.session_state['process'] == True:
         if train_now and 'train_labels' in globals():
             st.session_state['train'] = True
             #st.session_state['reload'] = False
             model_dict = {}
-            n_components = 20
+            #n_components = 20
             #print(1)
             train_model(n_components, train_labels=train_labels)
                 #st.success('Score :'+str(score))
@@ -501,8 +541,56 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 #st.experimental_rerun()
             
             #displaying
+            summary_df = pd.DataFrame(
+                {
+                    "Attribute": train_labels,
+                    "Correlation": list_result_corr,
+                    "R-Square": list_result_score,
+                    "RMSE": list_result_rmse,
+                    "Train Bias": list_train_bias,
+                    "Test Bias": list_test_bias,
+                    "Train SEP": list_train_sep,
+                    "Test SEP": list_test_sep
+                },
+                index=train_labels
+            )
+            with st.container():
+                st.dataframe(summary_df, use_container_width=True)
             display_result(train_labels=train_labels)
-            st.success('Trained Successfully')
+            param_df = pd.DataFrame({
+                "pol_1": [first_input_ponm],
+                "dev_1": [first_input_dev],
+                "smoothing_point_1": [first_input_smp],
+                "pol_2": [second_input_ponm],
+                "dev_2": [second_input_dev],
+                "smoothing_point_2": [second_input_smp],
+                "n_components": [n_components]
+            })
+
+            with st.container():
+                c1, c2 = st.columns([0.2,0.8], gap='small')
+                with c1:
+                    try:
+                        # Create ZIP containing all the CSV files
+                        zip_buffer = create_zip(csv_dict={
+                            "parameters": param_df,
+                            "Result Summary": summary_df,
+                            **{
+                                train_labels[i]: list_result_table[i] for i in range(len(train_labels))
+                            }
+                        })
+                        # Provide a download button for the ZIP file
+                        st.download_button(
+                            label="Download Results (ZIP)",
+                            data=zip_buffer,
+                            file_name='training_artifacts.zip',
+                            mime='application/zip',
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"Error creating ZIP: {e}")
+                with c2:
+                    st.success('Trained Successfully')
             with st.form(key='model_save'):
                 model_name = st.text_input('Enter the model name')
                 save_button = st.form_submit_button(label='Save',type='primary')

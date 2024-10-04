@@ -39,9 +39,11 @@ def get_secret(secret_name: str, region_name: str):
     secret = get_secret_value_response['SecretString']
     return secret
 
+
 def update_data(new_data):
     global data
     data = new_data
+
 
 @st.cache_data
 def split_data_corr_y(data,_y_names):
@@ -53,6 +55,7 @@ def split_data_corr_y(data,_y_names):
         temp_data[name] = y_data
         dataset_dict[name] = temp_data
     return dataset_dict
+
 
 #@st.cache_data(hash_funcs={pd.DataFrame: lambda _: None}, persist='disk')
 @st.cache_data(persist='disk')
@@ -66,8 +69,11 @@ def perform_savgol(data: pd.DataFrame, _x_names: list, pol, wl, dvt):
         st.warning("If the polynomial order is set to 0, an SMA (Simple Moving Average) will be used instead (equivalently).")
         data[_x_names] = data[_x_names].apply(lambda col: simple_moving_average(col, wl), axis=1)
     else:
-        data[_x_names] = data[_x_names].apply(lambda col: savgol_filter(col, polyorder=pol, window_length=wl, deriv=dvt, mode='nearest'))
-    
+        data[_x_names] = data[_x_names].apply(lambda col: savgol_filter(col, polyorder=pol, window_length=wl, deriv=dvt))
+    # temp_data = data[_x_names]
+    # temp_data.iloc[:,:wl] = 0
+    # temp_data.iloc[:,-wl:] = 0
+    # data[_x_names] = temp_data
     return data
 
 #@st.cache_data(hash_funcs={pd.DataFrame: lambda _: None}, persist='disk')
@@ -82,9 +88,13 @@ def perform_savgol2(data: pd.DataFrame, _x_names: list, pol, wl, dvt):
         st.warning("If the polynomial order is set to 0, an SMA (Simple Moving Average) will be used instead (equivalently).")
         data[_x_names] = data[_x_names].apply(lambda col: simple_moving_average(col, wl), axis=1)
     else:
-        data[_x_names] = data[_x_names].apply(lambda col: savgol_filter(col, polyorder=pol, window_length=wl, deriv=dvt, mode='nearest'))
-    
+        data[_x_names] = data[_x_names].apply(lambda col: savgol_filter(col, polyorder=pol, window_length=wl, deriv=dvt))
+    # temp_data = data[_x_names]
+    # temp_data.iloc[:,:wl] = 0
+    # temp_data.iloc[:,-wl:] = 0
+    # data[_x_names] = temp_data
     return data
+
 
 @st.cache_data
 def plot_spectrum(data, _x_names):
@@ -107,7 +117,6 @@ def plot_spectrum(data, _x_names):
 @st.cache_data
 def plot_spectrum2(data: pd.DataFrame, _x_names):
     df_t = data[_x_names].T
-    print(df_t.columns)
     df_t.index = _x_names
     df_t = df_t.reset_index()
     fig = px.line(df_t, x='index', y=df_t.columns[1:], title='Spectra Plot')
@@ -202,13 +211,13 @@ def normalize_y(y_train,y_test,_scaler):
 #@st.cache_data(experimental_allow_widgets=True)
 def sav_tuning_1():
     with st.container():
-        first_input_smp = st.slider(label='Smoothing Points',min_value=3,max_value=201,step=2,value=3,key='s_first',on_change=clear_cache)
+        first_input_smp = st.slider(label='Smoothing Points',min_value=3,max_value=201,step=2,value=17,key='s_first',on_change=clear_cache)
         col1,col2= st.columns(2)
         with col1:
-            first_input_ponm = st.selectbox(label='Polynomial Order',options=list(range(0,first_input_smp//2)),key='p_first',index=0,on_change=clear_cache)
+            first_input_ponm = st.selectbox(label='Polynomial Order',options=list(range(0,first_input_smp//2)),key='p_first',index=1,on_change=clear_cache)
         with col2:
             if first_input_ponm != 0:
-                first_input_dev = st.selectbox(label='Derivative',options=[x for x in range(0,first_input_ponm+1)],key='d_first',index=1,on_change=clear_cache)
+                first_input_dev = st.selectbox(label='Derivative',options=[x for x in range(0,first_input_ponm+1)],key='d_first',index=0,on_change=clear_cache)
             else:
                 first_input_dev = st.selectbox(label='Derivative',options=['Not Available'],key='d_first',index=0,disabled=True, on_change=clear_cache)
     return first_input_dev,first_input_ponm,first_input_smp
@@ -216,7 +225,7 @@ def sav_tuning_1():
 #@st.cache_data(experimental_allow_widgets=True)
 def sav_tuning_2():
     with st.container():
-        second_input_smp = st.slider(label='Smoothing Points',min_value=3,max_value=201,step=2,value=147,key='s_second',on_change=clear_cache)
+        second_input_smp = st.slider(label='Smoothing Points',min_value=3,max_value=201,step=2,value=131,key='s_second',on_change=clear_cache)
         col1,col2 = st.columns(2)
         with col1:
             second_input_ponm = st.selectbox(label='Polynomial Order',options=list(range(0,second_input_smp//2)),key='p_second',index=2,on_change=clear_cache)

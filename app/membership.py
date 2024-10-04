@@ -5,10 +5,12 @@ import dotenv
 import os
 import Functions
 import json
+import logging
+logging.basicConfig(level=logging.INFO)
 
 dotenv.load_dotenv()
 secret_name = "prod/milk-quality-prediction/mysql"
-region_name = "ap-southeast-2"
+region_name = "us-east-1"
 try: 
     sql_keys = json.loads(Functions.get_secret(secret_name=secret_name, region_name=region_name))
     user = sql_keys["SQL_USER"]
@@ -22,9 +24,14 @@ except Exception as e:
     db_name = os.environ["DB_NAME"]
     db_port = int(os.environ["DB_PORT"])
 
+production = True
+#host = "52.64.234.175" if production else "mysql-container"
+host = "107.20.196.80" if production else "localhost"
+
 def connection():
     global conn,c
-    conn = pymysql.connect(host="52.64.234.175",user=user,passwd=pw,database=db_name,port=db_port)        
+    logging.info(host + user + db_name + str(db_port))
+    conn = pymysql.connect(host=host,user=user,passwd=pw,database=db_name,port=db_port)        
     c = conn.cursor()
     
 def register(name,surname,username,password):
