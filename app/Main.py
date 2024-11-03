@@ -320,7 +320,8 @@ elif st.session_state['login'] == True and not st.session_state['user']:
         #data = data.iloc[:100,:]
         y_names = data.columns[0:n_ys]
         x_names = data.columns[n_ys:]
-        x_names = [x for x in x_names if x > 900 and x < 1663]
+        #x_names = [x for x in x_names if x > 900 and x < 1663]
+        st.write(x_names)
 
         data_dict = Functions.split_data_corr_y(data,y_names)
         st.session_state['uploaded'] = True
@@ -328,14 +329,15 @@ elif st.session_state['login'] == True and not st.session_state['user']:
         st.subheader('Raw Data')
         st.dataframe(data.iloc[:50,:])
         with st.container():
-            col1,col2 = st.columns(2,gap='small')
+            col1,col2 = st.columns(2, gap='small')
             with col1:
                 with st.expander('View Data Statistic'):
                     st.text('Data Statistic')
                     st.dataframe(data.describe().loc[['count','mean','std','min','max'],y_names],use_container_width=True)
+                    st.success(f"Number of feature: {len(x_names)}")
             with col2:
                 with st.expander('View Spectrum Plot'):
-                    raw_fig = Functions.plot_spectrum(sample_data,x_names)
+                    raw_fig = Functions.plot_spectrum(sample_data, x_names)
                     st.plotly_chart(raw_fig,use_container_width=True)
 
     # Preprocess button

@@ -20,7 +20,7 @@ def user_page():
         data = load_data(data)
         y_names = ['SCC','Fat','Prt']
         x_names = data.columns
-        x_names = [x for x in x_names if x > 900 and x < 1663]
+        #x_names = [x for x in x_names if x > 900 and x < 1663]
         sample_data = data.sample(frac=0.3, random_state=42)
         #data_dict = Functions.split_data_corr_y(data,y_names)
         st.session_state['uploaded'] = True
@@ -32,6 +32,7 @@ def user_page():
         with st.expander('View Data Statistic'):
             st.text('Data Statistic')
             st.write(data.describe().loc[['count','mean','std','min','max'],x_names])
+            st.success(f"Number of feature: {len(x_names)}")
         #st.text('Spectrum Plot')
         with st.expander('View Spectrum Plot'):
             raw_fig = Functions.plot_spectrum(sample_data, x_names)
