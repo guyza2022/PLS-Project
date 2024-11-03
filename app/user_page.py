@@ -28,15 +28,18 @@ def user_page():
     st.subheader('Raw Data')
     if st.session_state['uploaded'] == True:
         #Show only top 50 rows
-        st.dataframe(data.iloc[:50,:])
-        with st.expander('View Data Statistic'):
-            st.text('Data Statistic')
-            st.write(data.describe().loc[['count','mean','std','min','max'],x_names])
-            st.success(f"Number of feature: {len(x_names)}")
-        #st.text('Spectrum Plot')
-        with st.expander('View Spectrum Plot'):
-            raw_fig = Functions.plot_spectrum(sample_data, x_names)
-            st.write(raw_fig)
+        try:
+            st.dataframe(data.iloc[:50,:])
+            with st.expander('View Data Statistic'):
+                st.text('Data Statistic')
+                st.write(data.describe().loc[['count','mean','std','min','max'],x_names])
+                st.success(f"Number of feature: {len(x_names)}")
+            #st.text('Spectrum Plot')
+            with st.expander('View Spectrum Plot'):
+                raw_fig = Functions.plot_spectrum(sample_data, x_names)
+                st.write(raw_fig)
+        except:
+            pass
     else:
         st.info('Waiting For Data')
     st.subheader('Result')
