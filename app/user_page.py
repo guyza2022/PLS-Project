@@ -39,6 +39,7 @@ def user_page():
                 raw_fig = Functions.plot_spectrum(sample_data, x_names)
                 st.write(raw_fig)
         except:
+            st.session_state["uploaded"] = False
             pass
     else:
         st.info('Waiting For Data')
