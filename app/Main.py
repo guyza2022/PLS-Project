@@ -321,7 +321,6 @@ elif st.session_state['login'] == True and not st.session_state['user']:
         y_names = data.columns[0:n_ys]
         x_names = data.columns[n_ys:]
         #x_names = [x for x in x_names if x > 900 and x < 1663]
-        st.write(x_names)
 
         data_dict = Functions.split_data_corr_y(data,y_names)
         st.session_state['uploaded'] = True
