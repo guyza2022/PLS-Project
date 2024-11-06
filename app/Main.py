@@ -232,7 +232,7 @@ if 'uploaded' not in st.session_state:
     st.session_state['process'] = False
     st.session_state['train'] = False
     st.session_state['reload'] = True 
-    st.session_state['login'] = True
+    st.session_state['login'] = False
     st.session_state['register'] = False
     st.session_state['user'] = False #
     st.session_state['save'] = False
