@@ -48,11 +48,10 @@ st.set_page_config(page_title='Milk Quality Prediction', page_icon=None, layout=
 def load_data(data):
     return pd.read_excel(data,index_col=0)
 
-#@st.cache_resource
+
 def display_result(train_labels: list = None):
     for i in range(len(train_labels)):
         with st.expander('View Results for '+train_labels[i]):
-            #st.write(i)
             st.dataframe(list_result_table[i].astype(float),use_container_width=True)
             st.plotly_chart(list_result_fig[i],use_container_width=True)
             st.plotly_chart(list_result_weights[i],use_container_width=True)
@@ -74,10 +73,8 @@ def display_result(train_labels: list = None):
                     st.success('Test SEP :\n' + str(round(list_test_sep[i], 7)))
 
 
-#@st.cache_resource
 def train_model(n_components, train_labels: list =  None):
     global y_test,y_pred
-    #print(2)
     for y_name in train_labels:
         model = deepcopy(PLSRegression(n_components=n_components))
         model.fit(training_data_dict.get(y_name)[0],training_data_dict.get(y_name)[2])
@@ -86,7 +83,6 @@ def train_model(n_components, train_labels: list =  None):
         y_train_pred = model.predict(training_data_dict.get(y_name)[0])
         y_pred = model.predict(training_data_dict.get(y_name)[1])
 
-        #compare values
         scaler = training_data_dict.get(y_name)[4]
         compare = pd.DataFrame(columns=['y_test','y_pred'])
         compare['y_test'] = training_data_dict.get(y_name)[3].reshape(len(y_test),)
@@ -117,7 +113,6 @@ def train_model(n_components, train_labels: list =  None):
             compare_fig.update_layout(title='Compare Plot',
                                 xaxis_title='Records',
                                 yaxis_title='Value')
-        #st.write(compare_fig)
         list_result_fig.append(compare_fig)
         score = model.score(training_data_dict.get(y_name)[0],training_data_dict.get(y_name)[2])
         list_result_score.append(score)
@@ -129,9 +124,9 @@ def train_model(n_components, train_labels: list =  None):
         weights_fig.update_layout(title='Regression Coefficients Plot',
                                 xaxis_title='Parameter',
                                 yaxis_title='Coefficient')
-        #st.write(weights)
         
         list_result_weights.append(weights_fig)
+
 
 def save_model(model_name, y_name):
     model_name_y_name = model_name+'_'+y_name
@@ -149,46 +144,42 @@ def save_model(model_name, y_name):
     joblib.dump(model,model_filename)
     joblib.dump(scaler,scaler_filename)
     global all_models
-    #st.write(model_name)
     return None
 
 
 def save_all_model(model_name, train_labels: list = None):
-    #global model_name
-    #update_model_name()
     global y_names
     try:
         st.session_state['save'] = True
         for label in train_labels:
             folder_dir = os.path.join(dirname,label)
-            #st.write(folder_dir)
             os.mkdir(folder_dir)
-            #st.write(model_name)
     except:
         pass
     for y_name in train_labels:
         save_model(model_name,y_name)
 
+
 def create_zip(csv_dict: dict):
     """
     Create an in-memory ZIP file containing multiple CSVs from the provided URLs.
     """
-    zip_buffer = io.BytesIO()  # Buffer to hold the in-memory ZIP
+    zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, df in csv_dict.items():
             try:
                 csv_data = df.to_csv(index=False)
-                # Write each CSV to the ZIP file
                 zf.writestr(f"{name}.csv", csv_data)
             except Exception as e:
                 st.warning(f"Failed to download from {name}: {e}")
-    zip_buffer.seek(0)  # Move to the beginning of the buffer
+    zip_buffer.seek(0)
     return zip_buffer
+
 
 def clear_cache_resource():
     global train_now
     train_now = False
-    #st.cache_resource.clear()
+
 
 def delete_model(label: str, name: str):
     with open('current_model.yaml', 'r') as file:
@@ -198,14 +189,15 @@ def delete_model(label: str, name: str):
         else:
             st.warning('This model is currently on production!')
 
+
 def logout():
     st.session_state['login'] = False
     st.session_state['logout'] = True
-    print(st.session_state['login'])
+
 
 dirname = os.path.dirname(__file__)
 dirname = os.path.join(dirname,'Models')
-#all_models = [name for name in os.listdir(dirname) if name != '.DS_Store']
+
 
 def get_models_by_labels(label: str):
     global dirname
@@ -215,8 +207,6 @@ def get_models_by_labels(label: str):
 def refresh_models_list():
     return [name for name in os.listdir(dirname) if name != '.DS_Store']
 
-#authenticate
-#ms.connection() #initiate sql connection
 
 wait_for_process_text = 'Waiting For Data'
 hide_streamlit_style = """
@@ -241,40 +231,30 @@ if 'uploaded' not in st.session_state:
     train_now = False
     st.cache_data.clear()
     st.cache_resource.clear()
-    #st.write(st.session_state)
 
-#print(st.session_state['save'])
 
 if st.session_state['save'] or st.session_state['train'] == True:
     train_now = True
-    #st.write(True)
 else:
     train_now = False
 
-#train_now = False
-#is_user = True
 
-#st.session_state['login'] = True
-
-### Login Page ###
 if st.session_state['login'] != True and st.session_state['register'] == False:
     login_page()
 
-### Register Page ###
+
 elif st.session_state['login'] != True and st.session_state['register'] == True:
     register_page()
 
-### User Side Page ###
+
 elif st.session_state['login'] == True and st.session_state['user']:
     user_page()
 
-### Admin Side Page ###
+
 elif st.session_state['login'] == True and not st.session_state['user']:
     st.experimental_set_query_params(code='logged_in')
-    ### Side Bar ###
     with st.sidebar:
         st.header('Model Management')
-        #tf = open("current_model.txt", "r")
         st.subheader('Deploy')
         scc_deploy_model = st.selectbox('SCC',get_models_by_labels('SCC'), key='deploy_scc')
         fat_deploy_model = st.selectbox('Fat',get_models_by_labels('Fat'), key='deploy_fat')
@@ -291,15 +271,12 @@ elif st.session_state['login'] == True and not st.session_state['user']:
         st.subheader('Delete')       
         scc_delete_model = st.selectbox('SCC',get_models_by_labels('SCC'), key='del_scc')
         if st.button('Delete', disabled=len(get_models_by_labels('SCC')) == 0, key='scc_del_button', on_click=delete_model, kwargs={'label':'SCC','name':scc_delete_model}):
-            #delete_model('SCC',scc_delete_model)
             pass
         fat_delete_model = st.selectbox('Fat',get_models_by_labels('Fat'), key='del_fat')
         if st.button('Delete', disabled=len(get_models_by_labels('Fat')) == 0, key='fat_del_button', on_click=delete_model, kwargs={'label':'Fat','name':fat_delete_model}):
-            #delete_model('Fat',fat_delete_model)
             pass
         prt_delete_model = st.selectbox('Prt',get_models_by_labels('Prt'), key='del_prt')
         if st.button('Delete', disabled=len(get_models_by_labels('Prt')) == 0, key='prt_del_button', on_click=delete_model, kwargs={'label':'Prt','name':prt_delete_model}):
-            #delete_model('Prt',prt_delete_model)
             pass
 
     with st.container():
@@ -309,18 +286,14 @@ elif st.session_state['login'] == True and not st.session_state['user']:
     with col2:
         logout_button = st.button('Logout',type='primary',use_container_width=True,on_click=logout)
 
-    # Data
     data = st.file_uploader('Upload Dataset',type=['xlsx'])
     filter_ratio = [0.1,0.5,0.4]
 
-    # Load Data
     if data is not None:
         data = pd.read_excel(data,index_col=0)
         sample_data = data.sample(frac=0.3, random_state=42)
-        #data = data.iloc[:100,:]
         y_names = data.columns[0:n_ys]
         x_names = data.columns[n_ys:]
-        #x_names = [x for x in x_names if x > 900 and x < 1663]
 
         data_dict = Functions.split_data_corr_y(data,y_names)
         st.session_state['uploaded'] = True
@@ -339,11 +312,8 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                     raw_fig = Functions.plot_spectrum(sample_data, x_names)
                     st.plotly_chart(raw_fig,use_container_width=True)
 
-    # Preprocess button
     st.subheader('Preprocess')
     if st.session_state['uploaded'] == True:
-
-        #process_button = st.button('Process')
         with st.container():
             col1,col2 = st.columns([0.2,0.8])
         with col1:
@@ -358,21 +328,10 @@ elif st.session_state['login'] == True and not st.session_state['user']:
             except:
                 st.warning('Duplicated model name. Please Use another name.')
                 st.session_state['process'] = False
-        # elif process_button:
-        #     try:
-        #         st.session_state['process'] = True
-        #         train_now = False
-        #         folder_dir = os.path.join(dirname,model_name)
-        #         os.mkdir(folder_dir)
-        #     except:
-        #         st.warning('Duplicated model name. Please Use another name.')
-        #         st.session_state['process'] = False
 
-    #st.write(data.columns)
     if st.session_state['reload'] == False:
         st.session_state['process'] == True
 
-    # Preprocess
     with st.container():
         p1,p2,p3 = st.columns(3,gap='medium')
         with p1:
@@ -390,14 +349,9 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                     else:
                         st.success('Skipped')
                 if st.session_state['reload'] == True :
-                    #try: 
                     if not skip_check_box:
-                        #Functions.update_data(data)
                         sv1_data = deepcopy(Functions.perform_savgol(data.copy(), list(x_names), first_input_ponm, first_input_smp//2, first_input_dev))
-                        #Functions.update_data(sv1_data.loc[:,x_names])
                         sv1_fig = Functions.plot_spectrum(sv1_data.sample(frac=0.3, random_state=42).copy(), x_names)
-                    # except:
-                    #     st.error('Error')
             else:
                 with col2:
                     st.info(wait_for_process_text)
@@ -415,14 +369,12 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                         st.success('Success')
                     else:
                         st.success('Skipped')
-                #st.write(st.session_state['reload'])
                 if st.session_state['reload'] == True:
                     if not skip_check_box:
                         msc_data = sv1_data
                     try:
                         if not skip_check_box:
                             msc_data.loc[:,x_names] = deepcopy(Functions.msc(sv1_data[x_names].copy()))
-                            #Functions.update_data(msc_data)
                             msc_fig = Functions.plot_spectrum(msc_data.sample(frac=0.3, random_state=42).copy(),x_names)
                     except Exception as E:
                         st.error(E)
@@ -449,7 +401,6 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                     try:
                         if not skip_check_box:
                             sv2_data = deepcopy(Functions.perform_savgol2(msc_data.copy(), list(x_names), second_input_ponm, second_input_smp//2, second_input_dev))
-                            #Functions.update_data(sv2_data)
                             sv2_fig = Functions.plot_spectrum(sv2_data.sample(frac=0.3, random_state=42).copy(),x_names)
                     except:
                         st.error('Error')
@@ -475,19 +426,13 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 training_data_dict = {}
                 for y_name in y_names:
                     scaler = deepcopy(StandardScaler())
-                    #st.write(sv2_data)
                     if skip_check_box:
                         sv2_data = data
                     x_train,x_test,y_train,y_test = Functions.tt_split(sv2_data,x_names,y_name)
-                    #normalize y
                     y_train, y_test,scaler = Functions.normalize_y(y_train,y_test,scaler)
                     training_data_dict[y_name] = deepcopy((x_train,x_test,y_train,y_test,scaler))
 
 
-    # if st.session_state['save'] == True:
-    #     st.session_state['train'] = True
-
-    # Training
     st.subheader('Training')
     train_labels = []
     with st.form(key='model_train'):
@@ -498,9 +443,7 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                c1,c2,c3,c4 = st.columns(4, gap='small')
             with c1:
                 train_scc = st.checkbox(label='SCC')
-            #with c2:
                 train_fat = st.checkbox(label='Fat')
-            #with c3:
                 train_prt = st.checkbox(label='Prt')
             with c2:
                 n_components = st.slider(label='Number of Components', min_value=1, max_value=200, step=1, value=72)
@@ -513,7 +456,6 @@ elif st.session_state['login'] == True and not st.session_state['user']:
     if train_scc: train_labels.append('SCC')
     if train_fat: train_labels.append('Fat')
     if train_prt: train_labels.append('Prt')
-        #st.cache_resource.clear()
     list_result_table = []
     list_result_fig = []
     list_result_score = []
@@ -524,24 +466,14 @@ elif st.session_state['login'] == True and not st.session_state['user']:
     list_test_bias = []
     list_train_sep = []
     list_test_sep = []
-    # Training 
     if st.session_state['process'] == True:
         if train_now and 'train_labels' in globals():
             st.session_state['train'] = True
-            #st.session_state['reload'] = False
             model_dict = {}
-            #n_components = 20
-            #print(1)
             train_model(n_components, train_labels=train_labels)
-                #st.success('Score :'+str(score))
-                # for y_name in y_names:
-                #     save_model(model_name,y_name)
             def update_model_name():
                 global model_name
                 model_name = model_name
-                #st.experimental_rerun()
-            
-            #displaying
             summary_df = pd.DataFrame(
                 {
                     "Attribute": train_labels,
@@ -572,7 +504,6 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 c1, c2 = st.columns([0.2,0.8], gap='small')
                 with c1:
                     try:
-                        # Create ZIP containing all the CSV files
                         zip_buffer = create_zip(csv_dict={
                             "parameters": param_df,
                             "Result Summary": summary_df,
@@ -580,7 +511,6 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                                 train_labels[i]: list_result_table[i] for i in range(len(train_labels))
                             }
                         })
-                        # Provide a download button for the ZIP file
                         st.download_button(
                             label="Download Results (ZIP)",
                             data=zip_buffer,
@@ -597,14 +527,8 @@ elif st.session_state['login'] == True and not st.session_state['user']:
                 save_button = st.form_submit_button(label='Save',type='primary')
                 if save_button:
                     if model_name:
-                        #st.write(model_name)
                         save_all_model(model_name, train_labels=train_labels)
                         st.success('Saved Successfully')
-            # model_name = st.text_input('Enter the model name',on_change=update_model_name)
-            # if model_name == '':
-            #     save_button = st.button('Save Model',on_click=save_all_model,type='primary', disabled=True)
-            # else:
-            #     save_button = st.button('Save Model',on_click=save_all_model,type='primary')
             if st.session_state['save'] == True:
                 st.session_state['save'] = False
     else:

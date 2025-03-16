@@ -17,15 +17,13 @@ try:
     pw = sql_keys["SQL_PASSWORD"]
     db_name = sql_keys["DB_NAME"]
     db_port = int(sql_keys["DB_PORT"])
-except Exception as e: 
-    print(e)
+except Exception as e:
     user = os.environ["SQL_USER"]
     pw = os.environ["SQL_PASSWORD"]
     db_name = os.environ["DB_NAME"]
     db_port = int(os.environ["DB_PORT"])
 
 production = True
-#host = "52.64.234.175" if production else "mysql-container"
 host = "107.20.196.80" if production else "localhost"
 
 def connection():
@@ -33,7 +31,8 @@ def connection():
     logging.info(host + user + db_name + str(db_port))
     conn = pymysql.connect(host=host,user=user,passwd=pw,database=db_name,port=db_port)        
     c = conn.cursor()
-    
+
+
 def register(name,surname,username,password):
     num = c.execute('SELECT username FROM user WHERE username = %s',(username))
     bytes = password.encode('utf-8')
@@ -46,18 +45,15 @@ def register(name,surname,username,password):
     else:
         st.warning('Username Duplicated')
 
+
 def login(username,password):
     successful = False
     global is_user
     c.execute('SELECT username,password,user_type FROM user WHERE username = %s',(username))
-    #bytes = password.encode('utf-8')
     user_data = c.fetchone()
     encoded_password = password.encode('utf-8')
     real_password = user_data[1].encode('utf-8')
-    #st.write(real_password)
     user_type = user_data[2]
-    #st.write(bytes)
-    #st.write(bcrypt.checkpw(encoded_password, real_password))
     if bcrypt.checkpw(encoded_password, real_password):
         st.session_state['login'] = True
         if user_type == 'admin':
@@ -69,4 +65,3 @@ def login(username,password):
     else:
         st.warning('Incorrect Username/Password')
     return successful
-    #st.warning('Please Fill The Entry')

@@ -10,7 +10,6 @@ def register_callback():
     try:
         if st.experimental_get_query_params()['code'][0] == 'logged_in' and not st.session_state['logout']:
             st.session_state['login'] = True
-            #print(6)
         else:
             st.session_state['login'] = False
     except:
@@ -29,7 +28,6 @@ def login_page():
         login_buton = st.form_submit_button('Login')
         if login_buton and len(username) !=0 and len(password) != 0:
             succ = ms.login(username,password)
-            #st.write(succ)
             if succ:
                 st.session_state['login'] = True
                 st.experimental_rerun()

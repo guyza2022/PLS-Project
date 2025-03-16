@@ -10,12 +10,12 @@ def register_callback():
     try:
         if st.experimental_get_query_params()['code'][0] == 'logged_in' and not st.session_state['logout']:
             st.session_state['login'] = True
-            #print(6)
         else:
             st.session_state['login'] = False
     except:
         print('Error regist')
         pass
+
 
 def register_page():
     with st.form(key='register_form'):
