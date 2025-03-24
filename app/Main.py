@@ -32,14 +32,6 @@ import yaml
 import zipfile
 import io
 
-# connected = False
-# while not connected:
-#     try:
-        
-#         connected = True
-#     except Exception as E:
-#         print(E)
-
 ms.connection()
 n_ys = 3
 st.set_page_config(page_title='Milk Quality Prediction', page_icon=None, layout="wide", initial_sidebar_state="collapsed", menu_items=None)
