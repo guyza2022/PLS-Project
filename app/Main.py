@@ -22,7 +22,6 @@ import joblib
 import os
 from copy import deepcopy
 import pickle
-#import streamlit_authenticator as sta
 from pathlib import Path
 import membership as ms
 import shutil
